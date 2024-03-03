@@ -34,3 +34,6 @@ out/
 *.zip
 *.tar.gz
 *.rar
+
+# DB profile
+application-*db.yml
