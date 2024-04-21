@@ -24,4 +24,22 @@ public class UserController {
         JsonObject userDetail = userService.getUserDetail(idx);
         return ResponseEntity.ok().body(userDetail);
     }
+
+    @PostMapping("/save")
+    public ResponseEntity<?> saveUserInfo(@RequestBody JsonObject userSaveRequest) {
+        JsonObject result = userService.saveUser(userSaveRequest);
+        return ResponseEntity.ok().body(result);
+    }
+
+    @PostMapping("/update")
+    public ResponseEntity<?> updateUserInfo(@RequestBody JsonObject userUpdateRequest) {
+        JsonObject result = userService.updateUser(userUpdateRequest);
+        return ResponseEntity.ok().body(result);
+    }
+
+    @DeleteMapping("/delete")
+    public ResponseEntity<?> deleteUser(@RequestBody JsonObject userDeleteRequest) {
+        JsonObject result = userService.deleteUser(userDeleteRequest);
+        return ResponseEntity.ok().body(result);
+    }
 }
