@@ -2,6 +2,8 @@ package neltia.bloguide.api.service;
 
 import com.google.gson.*;
 import lombok.RequiredArgsConstructor;
+import neltia.bloguide.api.dto.UserSaveRequestDto;
+import neltia.bloguide.api.dto.UserUpdateRequestDto;
 import neltia.bloguide.api.domain.User;
 import neltia.bloguide.api.repository.UserRepository;
 import neltia.bloguide.api.utils.GsonUtils;
@@ -75,18 +77,11 @@ public class UserService {
     }
 
     @Transactional
-    public JsonObject saveUser(JsonObject userInfoRequest) {
+    public JsonObject saveUser(UserSaveRequestDto userSaveRequestDto) {
         JsonObject jsonObject = new JsonObject();
 
-        // 필수 값이 없는 경우: 개별 파라미터 전체 확인은 DTO 적용시 반영
-        // 대표 값 하나를 제외한 나머지 값은 있다고 가정
-        if (!userInfoRequest.has("userId")) {
-            jsonObject.addProperty("msg", "이미 있는 사용자입니다.");
-            return jsonObject;
-        }
-
         // 이미 있는 사용자인지 확인
-        String userId = userInfoRequest.get("userId").getAsString();
+        String userId = userSaveRequestDto.getUserId();
         User userInfo = userRepository.findUserByUserId(userId);
         if (userInfo != null) {
             jsonObject.addProperty("msg", "이미 있는 사용자입니다.");
@@ -94,9 +89,9 @@ public class UserService {
         }
 
         // 받은 사용자 데이터 저장
-        String userPw = userInfoRequest.get("userPw").getAsString();
-        String userName = userInfoRequest.get("userName").getAsString();
-        String userEmail = userInfoRequest.get("userEmail").getAsString();
+        String userPw = userSaveRequestDto.getUserPw();
+        String userName = userSaveRequestDto.getUserName();
+        String userEmail = userSaveRequestDto.getUserEmail();
         User user = User.builder()
                 .userId(userId)
                 .userPw(userPw)
@@ -115,20 +110,14 @@ public class UserService {
     }
 
     @Transactional
-    public JsonObject updateUser(JsonObject userUpdateRequest) {
+    public JsonObject updateUser(UserUpdateRequestDto userUpdateRequestDto) {
         JsonObject jsonObject = new JsonObject();
 
-        // 필수 값이 없는 경우: 개별 파라미터 전체 확인은 DTO 적용시 반영
-        // 대표 값 하나를 제외한 나머지 값은 있다고 가정
-        if (!userUpdateRequest.has("userId")) {
-            jsonObject.addProperty("msg", "이미 있는 사용자입니다.");
-            return jsonObject;
-        }
-        String userId = userUpdateRequest.get("userId").getAsString();
-        String userPw = userUpdateRequest.get("userPw").getAsString();
-        String userChangePw = userUpdateRequest.get("userChangePw").getAsString();
-        String userName = userUpdateRequest.get("userName").getAsString();
-        String userEmail = userUpdateRequest.get("userEmail").getAsString();
+        String userId = userUpdateRequestDto.getUserId();
+        String userPw = userUpdateRequestDto.getUserPw();
+        String userChangePw = userUpdateRequestDto.getUserChangePw();
+        String userName = userUpdateRequestDto.getUserName();
+        String userEmail = userUpdateRequestDto.getUserEmail();
 
         // 이미 있는 사용자인지 확인
         User userInfo = userRepository.findUserByUserId(userId);
@@ -147,7 +136,7 @@ public class UserService {
         userInfo.setUserName(userName);
         userInfo.setUserEmail(userEmail);
         // - userChangePw 데이터가 있다면 기존 비밀번호의 변경 요청이 있다고 가정
-        if (userUpdateRequest.has("userChangePw")) {
+        if (userUpdateRequestDto.getUserChangePw() != null) {
             if (Objects.equals(userChangePw, userInfo.getUserPw())) {
                 jsonObject.addProperty("msg", "기존 비밀번호와 같은 비밀번호로 변경할 수 없습니다.");
                 return jsonObject;

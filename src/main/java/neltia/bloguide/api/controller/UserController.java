@@ -2,9 +2,13 @@ package neltia.bloguide.api.controller;
 
 import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
+import neltia.bloguide.api.dto.UserSaveRequestDto;
+import neltia.bloguide.api.dto.UserUpdateRequestDto;
 import neltia.bloguide.api.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,14 +30,14 @@ public class UserController {
     }
 
     @PostMapping("/save")
-    public ResponseEntity<?> saveUserInfo(@RequestBody JsonObject userSaveRequest) {
-        JsonObject result = userService.saveUser(userSaveRequest);
+    public ResponseEntity<?> saveUserInfo(@Valid @RequestBody UserSaveRequestDto userSaveRequestDto) {
+        JsonObject result = userService.saveUser(userSaveRequestDto);
         return ResponseEntity.ok().body(result);
     }
 
     @PostMapping("/update")
-    public ResponseEntity<?> updateUserInfo(@RequestBody JsonObject userUpdateRequest) {
-        JsonObject result = userService.updateUser(userUpdateRequest);
+    public ResponseEntity<?> updateUserInfo(@Valid @RequestBody UserUpdateRequestDto userUpdateRequestDto) {
+        JsonObject result = userService.updateUser(userUpdateRequestDto);
         return ResponseEntity.ok().body(result);
     }
 
