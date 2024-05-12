@@ -10,7 +10,7 @@ import neltia.bloguide.api.domain.User;
 import neltia.bloguide.api.share.ResponseCodeEnum;
 import neltia.bloguide.api.share.ResponseResult;
 import neltia.bloguide.api.repository.UserRepository;
-import neltia.bloguide.api.utils.GsonUtils;
+import neltia.bloguide.api.infrastructure.utils.GsonUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

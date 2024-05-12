@@ -37,3 +37,4 @@ out/
 
 # DB profile
 application-*db.yml
+application-es.yml

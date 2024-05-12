@@ -10,7 +10,9 @@ spring:
       preferred-json-mapper: gson
   # datasource: 상세 설정은 mariadb profile 참조
   profiles:
-    include: mariadb
+    include:
+    - mariadb
+    - es
   # jpa 설정
   jpa:
     hibernate:

@@ -35,3 +35,77 @@ spring:
     hikari:
       leak-detection-threshold: 300000
 </pre>
+
+### ES: Elasticsearch & Kibana (single)
+- Elasticsearch install
+<pre>
+sudo docker pull elasticsearch:8.11.1
+sudo docker run -d --name es01 -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" elasticsearch:8.11.1
+</pre>
+- Elasticsearch setting: password
+<pre>
+sudo docker exec -it es01 /usr/share/elasticsearch/bin/elasticsearch-setup-passwords interactive
+exit
+docker restart es01
+</pre>
+
+- Kibana install
+<pre>
+sudo docker pull kibana:8.11.1
+docker run -d --name kib01 -p 5601:5601 kibana:8.11.1
+</pre>
+
+### ES: Elasticsearch & Kibana (cluster)
+- .env file 
+<pre>
+# Password for the 'elastic' user (at least 6 characters)
+ELASTIC_PASSWORD=
+
+# Password for the 'kibana_system' user (at least 6 characters)
+KIBANA_PASSWORD=
+
+# Version of Elastic products
+STACK_VERSION=8.11.1
+
+# Set the cluster name
+CLUSTER_NAME=docker-cluster
+
+# Set to 'basic' or 'trial' to automatically start the 30-day trial
+LICENSE=basic
+
+# Port to expose Elasticsearch HTTP API to the host
+ES_PORT=9200
+
+# Port to expose Kibana to the host
+KIBANA_PORT=5601
+
+# Increase or decrease based on the available host memory (in bytes)
+MEM_LIMIT=1073741824
+
+# Project namespace (defaults to the current folder name if not set)
+# COMPOSE_PROJECT_NAME=myproject
+</pre>
+
+- Elasticsearch & Kibana setup
+<pre>
+# service build
+docker-compose up -d --build
+
+# service down
+docker-compose down
+
+# service restart
+docker-compose up -d
+</pre>
+
+### ES: application-mariadb.yml
+application-es.yml
+<pre>
+spring:
+  elasticsearch:
+    es-hosts-local: 127.0.0.1
+    es-port-local: 9200
+    es-username-local: 
+    es-password-local: 
+    es-secure-local: true
+</pre>
