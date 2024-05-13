@@ -98,7 +98,7 @@ docker-compose down
 docker-compose up -d
 </pre>
 
-### ES: application-mariadb.yml
+### ES: application-es.yml
 application-es.yml
 <pre>
 spring:
