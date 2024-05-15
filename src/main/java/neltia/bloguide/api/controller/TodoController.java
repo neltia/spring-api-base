@@ -22,4 +22,11 @@ public class TodoController {
         result = todoService.isEsIndexExists(indexName);
         return ResponseEntity.ok().body(result.getResponseResult());
     }
+
+    @GetMapping("/{todoId}")
+    public ResponseEntity<?> getTodoItem(@PathVariable String todoId) {
+        ResponseResult result;
+        result = todoService.getTodoItem(todoId);
+        return ResponseEntity.ok().body(result.getResponseResult());
+    }
 }

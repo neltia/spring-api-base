@@ -17,6 +17,8 @@ public class TodoService {
     @Qualifier("localElasticClient")
     private RestHighLevelClient client;
 
+    private final String todoIndex = "todo_index";
+
     private final ElasticsearchUtils esUtils;
 
     public ResponseResult isEsIndexExists(String indexName) {
@@ -25,6 +27,21 @@ public class TodoService {
 
         boolean isExists = esUtils.isIndexExists(client, indexName);
         data.addProperty("isExists", isExists);
+
+        result.setResultCode(ResponseCodeEnum.OK.getCode());
+        result.setData(data);
+        return result;
+    }
+
+    public ResponseResult getTodoItem(String todoItemId) {
+        ResponseResult result = new ResponseResult(0);
+        JsonObject data;
+
+        data = esUtils.getTodoItem(client, todoIndex, todoItemId);
+        if (data == null) {
+            result.setResultCode(ResponseCodeEnum.NOT_FOUND.getCode());
+            return result;
+        }
 
         result.setResultCode(ResponseCodeEnum.OK.getCode());
         result.setData(data);
