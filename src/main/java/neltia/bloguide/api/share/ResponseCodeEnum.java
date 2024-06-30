@@ -26,7 +26,9 @@ public enum ResponseCodeEnum {
     INVALID_METHOD(405),
 
     DAILY_QUOTA_LIMIT_EXCEED(429),
-    OVER_THE_DAILY_REQUEST_LIMIT(429);
+    OVER_THE_DAILY_REQUEST_LIMIT(429),
+
+    INTERNAL_SERVER_ERROR(500);
 
     private final Integer code;
 }
