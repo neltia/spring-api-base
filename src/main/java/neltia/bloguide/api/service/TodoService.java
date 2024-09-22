@@ -2,6 +2,7 @@ package neltia.bloguide.api.service;
 
 import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
+import neltia.bloguide.api.dto.TodoGetItemListRequest;
 import neltia.bloguide.api.dto.TodoSaveRequestDto;
 import neltia.bloguide.api.dto.TodoUpdateRequestDto;
 import neltia.bloguide.api.infrastructure.utils.ElasticsearchUtils;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -130,6 +132,23 @@ public class TodoService {
         ResponseResult result = new ResponseResult(0);
 
         JsonObject data = esUtils.deleteTodoItem(client, todoIndex, todoItemId);
+        if (data == null) {
+            result.setResultCode(ResponseCodeEnum.NOT_FOUND.getCode());
+            return result;
+        }
+
+        result.setResultCode(ResponseCodeEnum.OK.getCode());
+        result.setData(data);
+        return result;
+    }
+
+    // get item list with es multi get api
+    public ResponseResult getTodoItemWithMultiGet(TodoGetItemListRequest todoGetItemListRequest) {
+        ResponseResult result = new ResponseResult(0);
+
+        List<String> todoIdList = todoGetItemListRequest.getIdList();
+        String retKeyId = null;
+        JsonObject data = esUtils.getTodoListWithMultiGet(client, todoIndex, todoIdList, retKeyId);
         if (data == null) {
             result.setResultCode(ResponseCodeEnum.NOT_FOUND.getCode());
             return result;

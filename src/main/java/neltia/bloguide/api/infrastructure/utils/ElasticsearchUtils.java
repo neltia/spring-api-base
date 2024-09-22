@@ -1,17 +1,13 @@
 package neltia.bloguide.api.infrastructure.utils;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import neltia.bloguide.api.share.ResponseCodeEnum;
 import org.elasticsearch.ElasticsearchStatusException;
+import org.elasticsearch.action.get.*;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -25,6 +21,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -138,6 +135,40 @@ public class ElasticsearchUtils {
         }
 
         resultObj.addProperty("data", ResponseCodeEnum.DATA_EXISTS.toString());
+        return resultObj;
+    }
+
+    // get es doc with multi get
+    public JsonObject getTodoListWithMultiGet(RestHighLevelClient client, String index, List<String> todoIds, String key) {
+        JsonObject resultObj = new JsonObject();
+
+        MultiGetRequest multiGetRequest = new MultiGetRequest();
+        for (String todoId : todoIds) {
+            multiGetRequest.add(new MultiGetRequest.Item(index, todoId));
+        }
+
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        MultiGetResponse response;
+        try {
+            response = client.mget(multiGetRequest, RequestOptions.DEFAULT);
+        } catch (ElasticsearchStatusException | IOException e) {
+            System.out.println("e.getCause() = " + e.getCause());
+            resultObj.addProperty("error_status", ResponseCodeEnum.INTERNAL_SERVER_ERROR.toString());
+            resultObj.addProperty("error_msg", e.getMessage());
+            return resultObj;
+        }
+
+        String id;
+        for (MultiGetItemResponse item : response.getResponses()) {
+            JsonObject source = gson.fromJson(item.getResponse().getSourceAsString(), JsonObject.class);
+            if (key == null || key.isEmpty()) {
+                id = source.get("_id").getAsString();
+                resultObj.add(id, source);
+            }
+            id = source.get(key).toString().replaceAll("\"", "");
+            resultObj.add(id, source);
+        }
+
         return resultObj;
     }
 }

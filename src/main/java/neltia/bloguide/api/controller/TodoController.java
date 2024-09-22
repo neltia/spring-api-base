@@ -1,6 +1,7 @@
 package neltia.bloguide.api.controller;
 
 import lombok.RequiredArgsConstructor;
+import neltia.bloguide.api.dto.TodoGetItemListRequest;
 import neltia.bloguide.api.dto.TodoSaveRequestDto;
 import neltia.bloguide.api.dto.TodoUpdateRequestDto;
 import neltia.bloguide.api.service.TodoService;
@@ -42,6 +43,12 @@ public class TodoController {
     public ResponseEntity<?> getTodoItem(@PathVariable String todoId) {
         ResponseResult result;
         result = todoService.getTodoItem(todoId);
+        return ResponseEntity.ok().body(result.getResponseResult());
+    }
+    @PostMapping("/get/item")
+    public ResponseEntity<?> getTodoItemListByKey(@RequestBody TodoGetItemListRequest todoGetItemListRequest) {
+        ResponseResult result;
+        result = todoService.getTodoItemWithMultiGet(todoGetItemListRequest);
         return ResponseEntity.ok().body(result.getResponseResult());
     }
 
