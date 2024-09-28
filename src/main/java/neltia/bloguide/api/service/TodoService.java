@@ -4,11 +4,16 @@ import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
 import neltia.bloguide.api.dto.TodoGetItemListRequest;
 import neltia.bloguide.api.dto.TodoSaveRequestDto;
+import neltia.bloguide.api.dto.TodoSearchListRequest;
 import neltia.bloguide.api.dto.TodoUpdateRequestDto;
+import neltia.bloguide.api.infrastructure.utils.CommonUtils;
 import neltia.bloguide.api.infrastructure.utils.ElasticsearchUtils;
 import neltia.bloguide.api.share.ResponseCodeEnum;
 import neltia.bloguide.api.share.ResponseResult;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.MatchQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +34,7 @@ public class TodoService {
 
     private final ElasticsearchUtils esUtils;
 
+    // index exists check
     public ResponseResult isEsIndexExists(String indexName) {
         ResponseResult result = new ResponseResult(0);
         JsonObject data = new JsonObject();
@@ -41,6 +47,7 @@ public class TodoService {
         return result;
     }
 
+    // new item insert
     public ResponseResult insertTodoItem(TodoSaveRequestDto todoSaveRequestDto) {
         ResponseResult result = new ResponseResult(0);
 
@@ -65,6 +72,7 @@ public class TodoService {
         return result;
     }
 
+    // get item one by doc id
     public ResponseResult getTodoItem(String todoItemId) {
         ResponseResult result = new ResponseResult(0);
 
@@ -79,6 +87,7 @@ public class TodoService {
         return result;
     }
 
+    // get all
     public ResponseResult getTodoList() {
         ResponseResult result = new ResponseResult(0);
 
@@ -86,9 +95,43 @@ public class TodoService {
         sourceBuilder.sort("created_at", SortOrder.DESC);
         sourceBuilder.trackTotalHits(true); // document 수가 10000개 이상인 경우 필수
 
-        JsonObject data = esUtils.getTodoList(client, todoIndex, sourceBuilder);
+        JsonObject data = esUtils.searchTodoList(client, todoIndex, sourceBuilder);
         if (data == null) {
             result.setResultCode(ResponseCodeEnum.INTERNAL_SERVER_ERROR.getCode());
+            return result;
+        }
+
+        result.setResultCode(ResponseCodeEnum.OK.getCode());
+        result.setData(data);
+        return result;
+    }
+    // search item list
+    public ResponseResult searchTodoList(TodoSearchListRequest todoSearchListRequest) {
+        ResponseResult result = new ResponseResult(0);
+
+        String keyword = todoSearchListRequest.getKeyword();
+        Integer priority = todoSearchListRequest.getPriority();
+        Boolean done = todoSearchListRequest.getDone();
+
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+        if (keyword != null) {
+            boolQuery.must(QueryBuilders.matchQuery("task", keyword));
+        }
+        if (priority != null) {
+            boolQuery.filter(QueryBuilders.termQuery("priority", CommonUtils.convertGbn2Priority(priority)));
+        }
+        if (done != null) {
+            boolQuery.filter(QueryBuilders.termQuery("done", done));
+        }
+        sourceBuilder.query(boolQuery);
+
+        sourceBuilder.sort("created_at", SortOrder.DESC);
+        sourceBuilder.trackTotalHits(true); // document 수가 10000개 이상인 경우 필수
+
+        JsonObject data = esUtils.searchTodoList(client, todoIndex, sourceBuilder);
+        if (data == null) {
+            result.setResultCode(ResponseCodeEnum.NOT_FOUND.getCode());
             return result;
         }
 

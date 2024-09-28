@@ -3,6 +3,7 @@ package neltia.bloguide.api.controller;
 import lombok.RequiredArgsConstructor;
 import neltia.bloguide.api.dto.TodoGetItemListRequest;
 import neltia.bloguide.api.dto.TodoSaveRequestDto;
+import neltia.bloguide.api.dto.TodoSearchListRequest;
 import neltia.bloguide.api.dto.TodoUpdateRequestDto;
 import neltia.bloguide.api.service.TodoService;
 import neltia.bloguide.api.share.ResponseResult;
@@ -36,6 +37,12 @@ public class TodoController {
     public ResponseEntity<?> getTodoList() {
         ResponseResult result;
         result = todoService.getTodoList();
+        return ResponseEntity.ok().body(result.getResponseResult());
+    }
+    @PostMapping("/search")
+    public ResponseEntity<?> searchTodoList(@RequestBody TodoSearchListRequest todoSearchListRequest) {
+        ResponseResult result;
+        result = todoService.searchTodoList(todoSearchListRequest);
         return ResponseEntity.ok().body(result.getResponseResult());
     }
 

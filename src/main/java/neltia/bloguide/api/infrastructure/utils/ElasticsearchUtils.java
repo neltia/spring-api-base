@@ -27,6 +27,7 @@ import java.util.Map;
 @Component
 public class ElasticsearchUtils {
 
+    // exists check
     public boolean isIndexExists(RestHighLevelClient client, String index) {
         boolean isExists = false;
 
@@ -40,6 +41,7 @@ public class ElasticsearchUtils {
         return isExists;
     }
 
+    // insert item
     public JsonObject insertTodoItem(RestHighLevelClient client, String index, JsonObject source) {
         Map<String, Object> sourceMap = JsonHelper.toMap(source);
 
@@ -61,6 +63,7 @@ public class ElasticsearchUtils {
         return resultObj;
     }
 
+    // get item by doc id
     public JsonObject getTodoItem(RestHighLevelClient client, String index, String todoItemId) {
         GetRequest request = new GetRequest(index, todoItemId);
         GetResponse response;
@@ -76,8 +79,8 @@ public class ElasticsearchUtils {
 
         return resultObj;
     }
-
-    public JsonObject getTodoList(RestHighLevelClient client, String index, SearchSourceBuilder sourceBuilder) {
+    // search item list
+    public JsonObject searchTodoList(RestHighLevelClient client, String index, SearchSourceBuilder sourceBuilder) {
         JsonObject resultObj = new JsonObject();
 
         SearchRequest request = new SearchRequest(index);
@@ -102,6 +105,7 @@ public class ElasticsearchUtils {
         return resultObj;
     }
 
+    // update by doc id
     public JsonObject updateTodoItem(RestHighLevelClient client, String index, String docId, JsonObject source) {
         Map<String, Object> sourceMap = JsonHelper.toMap(source);
 
@@ -121,6 +125,7 @@ public class ElasticsearchUtils {
         return resultObj;
     }
 
+    // delete by doc id
     public JsonObject deleteTodoItem(RestHighLevelClient client, String index, String todoItemId) {
         JsonObject resultObj = new JsonObject();
 
