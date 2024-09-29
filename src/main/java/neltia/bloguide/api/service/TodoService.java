@@ -1,5 +1,6 @@
 package neltia.bloguide.api.service;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
 import neltia.bloguide.api.dto.TodoGetItemListRequest;
@@ -12,7 +13,7 @@ import neltia.bloguide.api.share.ResponseCodeEnum;
 import neltia.bloguide.api.share.ResponseResult;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.MatchQueryBuilder;
+import org.elasticsearch.index.query.MatchAllQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -233,12 +234,56 @@ public class TodoService {
         sourceBuilder.aggregation(AggregationBuilders.terms("aggs_task_word").field("task.keyword")).query(boolQuery);
 
         // - get stat data
-        JsonObject data = esUtils.statTodoList(client, todoIndex, sourceBuilder);
+        JsonObject data = esUtils.aggsTodoList(client, todoIndex, sourceBuilder);
         if (data == null) {
             result.setResultCode(ResponseCodeEnum.NOT_FOUND.getCode());
             return result;
         }
         else if (data.has("error_status")) {
+            result.setResultCode(data.get("error_status").getAsInt());
+            return result;
+        }
+
+        result.setResultCode(ResponseCodeEnum.OK.getCode());
+        result.setData(data);
+        return result;
+    }
+
+    // multi search example
+    public ResponseResult manageTodoUser(String userId) {
+        ResponseResult result = new ResponseResult(0);
+
+        // item inserted user list
+        // - filter query
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.query(new MatchAllQueryBuilder());
+
+        // - build aggs query
+        String aggName = "aggs_user_list";
+        sourceBuilder.size(0);
+        sourceBuilder.sort("created_at", SortOrder.DESC);
+        sourceBuilder.trackTotalHits(true); // document 수가 10000개 이상인 경우 필수
+        sourceBuilder.aggregation(AggregationBuilders.terms(aggName).field("user_id"));
+
+        // - get user list
+        JsonObject data = esUtils.aggsTodoList(client, todoIndex, sourceBuilder);
+        if (data == null) {
+            result.setResultCode(ResponseCodeEnum.NOT_FOUND.getCode());
+            return result;
+        }
+        else if (data.has("error_status")) {
+            result.setResultCode(data.get("error_status").getAsInt());
+            return result;
+        }
+        JsonArray userList = data.get(aggName).getAsJsonArray();
+
+        // search user info list
+        JsonObject userInfoData = esUtils.exampleMultiSearch(client, "user_indx", userList, "key");
+        if (userInfoData == null) {
+            result.setResultCode(ResponseCodeEnum.NOT_FOUND.getCode());
+            return result;
+        }
+        else if (userInfoData.has("error_status")) {
             result.setResultCode(data.get("error_status").getAsInt());
             return result;
         }

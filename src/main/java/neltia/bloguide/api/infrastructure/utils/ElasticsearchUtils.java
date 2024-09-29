@@ -6,6 +6,8 @@ import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.get.*;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.MultiSearchRequest;
+import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -16,13 +18,17 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.MatchQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -181,7 +187,7 @@ public class ElasticsearchUtils {
     }
 
     // search item list
-    public JsonObject statTodoList(RestHighLevelClient client, String index, SearchSourceBuilder sourceBuilder) {
+    public JsonObject aggsTodoList(RestHighLevelClient client, String index, SearchSourceBuilder sourceBuilder) {
         JsonObject resultObj = new JsonObject();
 
         SearchRequest request = new SearchRequest(index);
@@ -192,7 +198,7 @@ public class ElasticsearchUtils {
         } catch (ElasticsearchStatusException | IOException e) {
             System.out.println("e.getMessage() = " + e.getMessage());
             resultObj.addProperty("error_status", ResponseCodeEnum.INTERNAL_SERVER_ERROR.getCode());
-            return null;
+            return resultObj;
         }
 
         List<Aggregation> aggsList = response.getAggregations().asList();
@@ -215,5 +221,68 @@ public class ElasticsearchUtils {
         }
 
         return resultObj;
+    }
+
+    public JsonObject exampleMultiSearch(RestHighLevelClient client, String index, JsonArray itemList, String key) {
+        JsonObject result = new JsonObject();
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+        // set query builder
+        MultiSearchRequest multiRequest = new MultiSearchRequest();
+        for (JsonElement item : itemList) {
+            String searchItem = item.getAsJsonObject().get(key).getAsString();
+
+            SearchRequest searchRequest = new SearchRequest(index);
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+            MatchQueryBuilder matchQueryBuilder = QueryBuilders.matchQuery("user_id", searchItem);
+            sourceBuilder.query(matchQueryBuilder);
+            sourceBuilder.trackTotalHits(true);
+            sourceBuilder.size(1);
+            sourceBuilder.sort("last_login_date", SortOrder.DESC);
+
+            removeTypesField(searchRequest); // for legacy es client lib version
+            multiRequest.add(searchRequest);
+        }
+
+        // execute query
+        MultiSearchResponse response = null;
+        try {
+            response = client.msearch(multiRequest, RequestOptions.DEFAULT);
+        } catch (ElasticsearchStatusException | IOException e) {
+            System.out.println("e.getMessage() = " + e.getMessage());
+            result.addProperty("error_status", ResponseCodeEnum.INTERNAL_SERVER_ERROR.getCode());
+            return result;
+        }
+        if (response == null) {
+            result.addProperty("error_status", ResponseCodeEnum.NOT_FOUND.getCode());
+            return result;
+        }
+
+        // query result parsing
+        for (MultiSearchResponse.Item item : response.getResponses()) {
+            if (item.isFailure()) {
+                continue;
+            }
+            SearchHit[] searchHits = Objects.requireNonNull(item.getResponse()).getInternalResponse().hits().getHits();
+            if (searchHits.length == 0) {
+                continue;
+            }
+
+            String source = searchHits[0].getSourceAsString();
+            JsonObject searchData = gson.fromJson(source, JsonObject.class);
+            String userId = searchData.get("user_id").getAsString();
+            result.add(userId, searchData);
+        }
+        return result;
+    }
+    // remove types field at search request (* legacy version es client query dsl)
+    public static void removeTypesField(SearchRequest searchRequest) {
+        try {
+            Field typesField = SearchRequest.class.getDeclaredField("types");
+            typesField.setAccessible(true);
+            typesField.set(searchRequest, null);  // Set the types field to null
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            System.out.println("e.getCause() = " + e.getCause());
+        }
     }
 }
