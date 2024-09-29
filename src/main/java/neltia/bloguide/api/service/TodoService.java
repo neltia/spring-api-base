@@ -14,6 +14,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -119,7 +120,7 @@ public class TodoService {
             boolQuery.must(QueryBuilders.matchQuery("task", keyword));
         }
         if (priority != null) {
-            boolQuery.filter(QueryBuilders.termQuery("priority", CommonUtils.convertGbn2Priority(priority)));
+            boolQuery.filter(QueryBuilders.matchQuery("priority", CommonUtils.convertGbn2Priority(priority)));
         }
         if (done != null) {
             boolQuery.filter(QueryBuilders.termQuery("done", done));
@@ -194,6 +195,51 @@ public class TodoService {
         JsonObject data = esUtils.getTodoListWithMultiGet(client, todoIndex, todoIdList, retKeyId);
         if (data == null) {
             result.setResultCode(ResponseCodeEnum.NOT_FOUND.getCode());
+            return result;
+        }
+
+        result.setResultCode(ResponseCodeEnum.OK.getCode());
+        result.setData(data);
+        return result;
+    }
+
+    // stat item list
+    public ResponseResult statTodoList(TodoSearchListRequest todoSearchListRequest) {
+        ResponseResult result = new ResponseResult(0);
+
+        // - filter query
+        String keyword = todoSearchListRequest.getKeyword();
+        Integer priority = todoSearchListRequest.getPriority();
+        Boolean done = todoSearchListRequest.getDone();
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+        if (keyword != null) {
+            boolQuery.filter(QueryBuilders.matchQuery("task", keyword));
+        }
+        if (priority != null) {
+            boolQuery.filter(QueryBuilders.termQuery("priority", CommonUtils.convertGbn2Priority(priority)));
+        }
+        if (done != null) {
+            boolQuery.filter(QueryBuilders.termQuery("done", done));
+        }
+        sourceBuilder.query(boolQuery);
+
+        // - get stat data
+        sourceBuilder.size(0);
+        sourceBuilder.sort("created_at", SortOrder.DESC);
+        sourceBuilder.trackTotalHits(true); // document 수가 10000개 이상인 경우 필수
+        sourceBuilder.aggregation(AggregationBuilders.terms("aggs_done_count").field("done")).query(boolQuery);
+        sourceBuilder.aggregation(AggregationBuilders.terms("aggs_priority_count").field("priority")).query(boolQuery);
+        sourceBuilder.aggregation(AggregationBuilders.terms("aggs_task_word").field("task.keyword")).query(boolQuery);
+
+        // - get stat data
+        JsonObject data = esUtils.statTodoList(client, todoIndex, sourceBuilder);
+        if (data == null) {
+            result.setResultCode(ResponseCodeEnum.NOT_FOUND.getCode());
+            return result;
+        }
+        else if (data.has("error_status")) {
+            result.setResultCode(data.get("error_status").getAsInt());
             return result;
         }
 

@@ -19,6 +19,7 @@ public class TodoController {
 
     private final TodoService todoService;
 
+    // exists index (table)
     @GetMapping("/admin/exists/{indexName}")
     public ResponseEntity<?> isEsIndexExists(@PathVariable String indexName) {
         ResponseResult result;
@@ -26,6 +27,7 @@ public class TodoController {
         return ResponseEntity.ok().body(result.getResponseResult());
     }
 
+    // new item insert
     @PostMapping("")
     public ResponseEntity<?> insertTodoItem(@Valid @RequestBody TodoSaveRequestDto todoSaveRequestDto) {
         ResponseResult result;
@@ -33,6 +35,7 @@ public class TodoController {
         return ResponseEntity.ok().body(result.getResponseResult());
     }
 
+    // search list
     @GetMapping("/list")
     public ResponseEntity<?> getTodoList() {
         ResponseResult result;
@@ -46,12 +49,14 @@ public class TodoController {
         return ResponseEntity.ok().body(result.getResponseResult());
     }
 
+    // get item by doc id
     @GetMapping("/{todoId}")
     public ResponseEntity<?> getTodoItem(@PathVariable String todoId) {
         ResponseResult result;
         result = todoService.getTodoItem(todoId);
         return ResponseEntity.ok().body(result.getResponseResult());
     }
+    // get item by doc id list
     @PostMapping("/get/item")
     public ResponseEntity<?> getTodoItemListByKey(@RequestBody TodoGetItemListRequest todoGetItemListRequest) {
         ResponseResult result;
@@ -59,6 +64,7 @@ public class TodoController {
         return ResponseEntity.ok().body(result.getResponseResult());
     }
 
+    // update item by doc id
     @PutMapping("/{todoId}")
     public ResponseEntity<?> updateTodoItem(@PathVariable String todoId, @Valid @RequestBody TodoUpdateRequestDto todoUpdateRequestDto) {
         ResponseResult result;
@@ -66,10 +72,19 @@ public class TodoController {
         return ResponseEntity.ok().body(result.getResponseResult());
     }
 
+    // delete item by doc id
     @DeleteMapping("/{todoId}")
     public ResponseEntity<?> deleteTodoItem(@PathVariable String todoId) {
         ResponseResult result;
         result = todoService.deleteTodoItem(todoId);
+        return ResponseEntity.ok().body(result.getResponseResult());
+    }
+
+    // stat list
+    @PostMapping("/stat")
+    public ResponseEntity<?> statTodoList(@RequestBody TodoSearchListRequest todoSearchListRequest) {
+        ResponseResult result;
+        result = todoService.statTodoList(todoSearchListRequest);
         return ResponseEntity.ok().body(result.getResponseResult());
     }
 }

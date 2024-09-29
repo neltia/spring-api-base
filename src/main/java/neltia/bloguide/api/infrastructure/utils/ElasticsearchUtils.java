@@ -17,12 +17,15 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Component
 public class ElasticsearchUtils {
@@ -172,6 +175,43 @@ public class ElasticsearchUtils {
             }
             id = source.get(key).toString().replaceAll("\"", "");
             resultObj.add(id, source);
+        }
+
+        return resultObj;
+    }
+
+    // search item list
+    public JsonObject statTodoList(RestHighLevelClient client, String index, SearchSourceBuilder sourceBuilder) {
+        JsonObject resultObj = new JsonObject();
+
+        SearchRequest request = new SearchRequest(index);
+        request.source(sourceBuilder);
+        SearchResponse response;
+        try {
+            response = client.search(request, RequestOptions.DEFAULT);
+        } catch (ElasticsearchStatusException | IOException e) {
+            System.out.println("e.getMessage() = " + e.getMessage());
+            resultObj.addProperty("error_status", ResponseCodeEnum.INTERNAL_SERVER_ERROR.getCode());
+            return null;
+        }
+
+        List<Aggregation> aggsList = response.getAggregations().asList();
+        long totalCount = Objects.requireNonNull(response.getHits().getTotalHits()).value;
+        for (Aggregation aggs : aggsList) {
+            String aggName = aggs.getName();
+            Terms terms = response.getAggregations().get(aggName);
+
+            JsonArray results = new JsonArray();
+            for (Terms.Bucket bucket : terms.getBuckets()) {
+                JsonObject searchData = new JsonObject();
+                searchData.addProperty("key", bucket.getKeyAsString());
+                searchData.addProperty("count", bucket.getDocCount());
+                long docCount = bucket.getDocCount();
+                int count = (int) Math.round((double) docCount / (double) totalCount * 100);
+                searchData.addProperty("per", count);
+                results.add(searchData);
+            }
+            resultObj.add(aggName, results);
         }
 
         return resultObj;
