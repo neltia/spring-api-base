@@ -224,7 +224,7 @@ public class TodoService {
         }
         sourceBuilder.query(boolQuery);
 
-        // - get stat data
+        // - build aggs query
         sourceBuilder.size(0);
         sourceBuilder.sort("created_at", SortOrder.DESC);
         sourceBuilder.trackTotalHits(true); // document 수가 10000개 이상인 경우 필수
