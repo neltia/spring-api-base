@@ -1,7 +1,6 @@
 package neltia.bloguide.api.service;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import lombok.RequiredArgsConstructor;
 import neltia.bloguide.api.dto.TodoGetItemListRequest;
 import neltia.bloguide.api.dto.TodoSaveRequestDto;
@@ -23,6 +22,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -43,6 +43,31 @@ public class TodoService {
 
         boolean isExists = esUtils.isIndexExists(client, indexName);
         data.addProperty("isExists", isExists);
+
+        result.setResultCode(ResponseCodeEnum.OK.getCode());
+        result.setData(data);
+        return result;
+    }
+    // get index list
+    public ResponseResult getIndicesList() {
+        ResponseResult result = new ResponseResult(0);
+        JsonObject data = new JsonObject();
+
+        ArrayList<String> indexList = esUtils.getIndicesList(client, "*");
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        data.add("indexList", gson.toJsonTree(indexList));
+
+        result.setResultCode(ResponseCodeEnum.OK.getCode());
+        result.setData(data);
+        return result;
+    }
+    public ResponseResult getIndicesList(String indexPattern) {
+        ResponseResult result = new ResponseResult(0);
+        JsonObject data = new JsonObject();
+
+        ArrayList<String> indexList = esUtils.getIndicesList(client, indexPattern);
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        data.add("indexList", gson.toJsonTree(indexList));
 
         result.setResultCode(ResponseCodeEnum.OK.getCode());
         result.setData(data);

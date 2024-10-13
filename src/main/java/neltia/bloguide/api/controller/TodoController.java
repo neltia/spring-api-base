@@ -19,14 +19,6 @@ public class TodoController {
 
     private final TodoService todoService;
 
-    // exists index (table)
-    @GetMapping("/admin/exists/{indexName}")
-    public ResponseEntity<?> isEsIndexExists(@PathVariable String indexName) {
-        ResponseResult result;
-        result = todoService.isEsIndexExists(indexName);
-        return ResponseEntity.ok().body(result.getResponseResult());
-    }
-
     // new item insert
     @PostMapping("")
     public ResponseEntity<?> insertTodoItem(@Valid @RequestBody TodoSaveRequestDto todoSaveRequestDto) {

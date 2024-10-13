@@ -17,6 +17,7 @@ import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -29,9 +30,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.regex.Pattern;
 
 @Component
 public class ElasticsearchUtils {
@@ -49,6 +49,54 @@ public class ElasticsearchUtils {
 
         return isExists;
     }
+    // get index list by index pattern
+    public ArrayList<String> getIndicesList(RestHighLevelClient client, String indexPattern) {
+        GetIndexRequest request = new GetIndexRequest(indexPattern);
+        GetIndexResponse response = null;
+        try {
+            response = client.indices().get(request, RequestOptions.DEFAULT);
+        } catch (ElasticsearchStatusException | IOException e) {
+            System.out.println("e.getMessage() = " + e.getMessage());
+            return null;
+        }
+        String[] indices = response.getIndices();
+        ArrayList<String> result = new ArrayList<>();
+        for (String index : indices) {
+            if (!index.startsWith(".")) {
+                result.add(index);
+            }
+        }
+        return result;
+    }
+    public ArrayList<String> getIndicesSortedList(RestHighLevelClient client, String indexPattern, String sortIndex, boolean sortOrderDesc) {
+        GetIndexRequest request = new GetIndexRequest(indexPattern);
+        GetIndexResponse response = null;
+        try {
+            response = client.indices().get(request, RequestOptions.DEFAULT);
+        } catch (ElasticsearchStatusException | IOException e) {
+            System.out.println("e.getMessage() = " + e.getMessage());
+            return null;
+        }
+        String[] indices = response.getIndices();
+        ArrayList<String> filteredIndices = new ArrayList<>();
+        Pattern monthlyPattern = Pattern.compile(sortIndex + "-\\d{6}"); // 월별로 분리된 인덱스 경우
+        Pattern yearlyPattern = Pattern.compile(sortIndex + "-\\d{4}"); // 연별로 분리된 인덱스 경우
+
+        for (String indexName : indices) {
+            if (monthlyPattern.matcher(indexName).matches() || yearlyPattern.matcher(indexName).matches()) {
+                filteredIndices.add(indexName);
+            }
+        }
+
+        if (sortOrderDesc) {
+            filteredIndices.sort(Comparator.reverseOrder());
+        } else {
+            filteredIndices.sort((a, b) -> b.compareTo(b));
+        }
+
+        return filteredIndices;
+    }
+
 
     // insert item
     public JsonObject insertTodoItem(RestHighLevelClient client, String index, JsonObject source) {
