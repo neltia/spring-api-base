@@ -30,6 +30,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -96,6 +98,46 @@ public class ElasticsearchUtils {
 
         return filteredIndices;
     }
+    // 특정 시간 범위에 따른 인덱스 목록 필터링
+    public ArrayList<String> getTodoIndexListWithRange(ArrayList<String> allIndices, String startDateStr, String endDateStr) {
+        // 시작 시간과 종료 시간을 파싱합니다.
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDate startDate = LocalDate.parse(startDateStr, formatter);
+        LocalDate endDate = LocalDate.parse(endDateStr, formatter);
+        ArrayList<String> targetIndices = new ArrayList<>();
+
+        // 종료 날짜가 2024년 이후인 경우 월별 인덱스를 추가합니다.
+        if (endDate.getYear() >= 2024) {
+            LocalDate currentDate = endDate.withDayOfMonth(1);
+            while (!currentDate.isBefore(startDate.withDayOfMonth(1)) && currentDate.getYear() >= 2024) {
+                String buildIndex = "todo-" + currentDate.format(DateTimeFormatter.ofPattern("yyyyMM"));
+                if (allIndices.contains(buildIndex)) {
+                    targetIndices.add(buildIndex);
+                }
+                currentDate = currentDate.minusMonths(1);
+            }
+        }
+        // 시작 날짜 또는 종료 날짜가 2023년 이전인 경우 연별 인덱스를 추가합니다.
+        LocalDate currentYear = LocalDate.of(startDate.getYear(), 1, 1);
+        while (!currentYear.isAfter(endDate) && currentYear.getYear() <= 2023) {
+            String buildIndex = "todo-" + currentYear.getYear();
+            if (allIndices.contains(buildIndex)) {
+                targetIndices.add(buildIndex);
+            }
+            currentYear = currentYear.plusYears(1);
+        }
+
+        // 중복 제거를 위해 마지막으로 역순으로 정렬 후 반환
+        ArrayList<String> uniqueIndices = new ArrayList<>();
+        for (int i = targetIndices.size() - 1; i >= 0; i--) {
+            if (!uniqueIndices.contains(targetIndices.get(i))) {
+                uniqueIndices.add(targetIndices.get(i));
+            }
+        }
+
+        return targetIndices;
+    }
+
 
 
     // insert item
