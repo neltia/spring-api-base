@@ -141,7 +141,7 @@ MEM_LIMIT=1073741824
 </pre>
 
 
-<strong>Elasticsearch & Kibana setup <strong>
+<strong>Elasticsearch & Kibana setup </strong>
 <pre>
 # service build
 docker-compose up -d --build
@@ -154,7 +154,7 @@ docker-compose up -d
 </pre>
 
 <strong>ES: application-es.yml</strong>
-application-es.yml
+- application-es.yml
 <pre>
 spring:
   elasticsearch:
