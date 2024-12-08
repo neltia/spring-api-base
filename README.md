@@ -5,7 +5,7 @@
 - RESTful API 개발과 데이터 관리 솔루션 구현을 빠르게 시작할 수 있도록 사전 구성된 설정을 제공합니다.
 
 ## 기능
-- Vagrant & Docker를 활용한 간편한 개별 환경 구성
+- Vagrant & Docker를 활용한 간편한 개발 환경 구성
 - Java Spring Boot를 사용한 REST API 개발
 - Gson(Google Json) 라이브러리 활용 직렬화, 역직렬화
 - MariaDB 연동 유저 관리 API 개발 (JPA 활용)
@@ -141,7 +141,7 @@ MEM_LIMIT=1073741824
 </pre>
 
 
-<strong>Elasticsearch & Kibana setup <strong>
+<strong>Elasticsearch & Kibana setup </strong>
 <pre>
 # service build
 docker-compose up -d --build
@@ -154,7 +154,7 @@ docker-compose up -d
 </pre>
 
 <strong>ES: application-es.yml</strong>
-application-es.yml
+- application-es.yml
 <pre>
 spring:
   elasticsearch:
