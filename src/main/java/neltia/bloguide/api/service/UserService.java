@@ -32,6 +32,9 @@ public class UserService {
         List<User> userList = userRepository.findAll();
         for (User user : userList) {
             String json = GsonUtils.toJson(user);
+            if (json == null) {
+                continue;
+            }
             JsonObject obj = (JsonObject) JsonParser.parseString(json);
             data.add(obj);
         }
@@ -42,10 +45,16 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public ResponseResult getUserDetail(int idx) {
+    public ResponseResult getUserDetail(Long idx) {
         ResponseResult result = new ResponseResult(0);
 
         User userInfo = userRepository.findUserByIdx(idx);
+        if (userInfo == null) {
+            result.setResultCode(ResponseCodeEnum.NO_DATA.getCode());
+            String errMsg = "존재하지 않는 사용자입니다.";
+            result.setErrorMsg(errMsg);
+            return result;
+        }
         UserDetailResponse userDetailResponse = new UserDetailResponse(userInfo);
         String json = GsonUtils.toJson(userDetailResponse);
         if (json == null) {
@@ -68,6 +77,10 @@ public class UserService {
         // 사용자 정보 확인
         String userId = userDeleteRequest.getUserId();
         String userPw = userDeleteRequest.getUserPw();
+        if (userId == null || userId.isEmpty()) {
+            result.setResultCode(ResponseCodeEnum.INVALID_PARAMETER.getCode());
+            return result;
+        }
         User userInfo = userRepository.findUserByUserId(userId);
         if (userInfo == null) {
             result.setResultCode(ResponseCodeEnum.NO_DATA.getCode());
@@ -141,6 +154,12 @@ public class UserService {
         String userChangePw = userUpdateRequestDto.getUserChangePw();
         String userName = userUpdateRequestDto.getUserName();
         String userEmail = userUpdateRequestDto.getUserEmail();
+
+        // param check
+        if (userId == null || userId.isEmpty()) {
+            result.setResultCode(ResponseCodeEnum.INVALID_PARAMETER.getCode());
+            return result;
+        }
 
         // 이미 있는 사용자인지 확인
         User userInfo = userRepository.findUserByUserId(userId);

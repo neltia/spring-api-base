@@ -1,9 +1,11 @@
 package neltia.bloguide.api.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import neltia.bloguide.api.domain.User;
 
 @Getter
+@AllArgsConstructor
 public class UserDetailResponse {
     String userId;
 
