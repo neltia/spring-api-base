@@ -1,3 +1,4 @@
+/*
 package neltia.bloguide.api.infrastructure.driver;
 
 import org.springframework.context.annotation.Bean;
@@ -11,7 +12,7 @@ import springfox.documentation.spring.web.plugins.Docket;
 
 @Configuration
 public class SwaggerConfig {
-    @Bean
+    // @Bean
     public Docket apiDocket() {
         return new Docket(DocumentationType.SWAGGER_2)
                 .apiInfo(apiInfo())
@@ -29,3 +30,5 @@ public class SwaggerConfig {
                 .build();
     }
 }
+
+ */
