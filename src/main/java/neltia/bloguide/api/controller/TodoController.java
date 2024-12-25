@@ -79,12 +79,4 @@ public class TodoController {
         result = todoService.statTodoList(todoSearchListRequest);
         return ResponseEntity.ok().body(result.getResponseResult());
     }
-
-    // multi search example
-    @PostMapping("/{userId}")
-    public ResponseEntity<?> manageTodoUser(@PathVariable String userId) {
-        ResponseResult result;
-        result = todoService.manageTodoUser(userId);
-        return ResponseEntity.ok().body(result.getResponseResult());
-    }
 }
