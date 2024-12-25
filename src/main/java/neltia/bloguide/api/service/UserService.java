@@ -27,7 +27,8 @@ public class UserService {
     @Transactional(readOnly = true)
     public ResponseResult getUserList() {
         ResponseResult result = new ResponseResult(0);
-        JsonArray data = new JsonArray();
+        JsonObject data = new JsonObject();
+        JsonArray dataList = new JsonArray();
 
         List<User> userList = userRepository.findAll();
         for (User user : userList) {
@@ -36,10 +37,11 @@ public class UserService {
                 continue;
             }
             JsonObject obj = (JsonObject) JsonParser.parseString(json);
-            data.add(obj);
+            dataList.add(obj);
         }
 
         result.setResultCode(ResponseCodeEnum.OK.getCode());
+        data.add("list", dataList);
         result.setData(data);
         return result;
     }

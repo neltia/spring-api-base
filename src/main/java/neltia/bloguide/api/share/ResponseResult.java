@@ -1,5 +1,6 @@
 package neltia.bloguide.api.share;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.Getter;
@@ -47,9 +48,18 @@ public class ResponseResult {
 
     public JsonObject getData(){
         if(this.data != null && this.data.getClass().getName().contains("JsonObject")) {
+            assert this.data instanceof JsonObject;
             return (JsonObject) this.data;
         } else {
-            return null;
+            JsonArray dataArray = (JsonArray) this.data;
+            if (dataArray == null) {
+                return null;
+            }
+            if (!dataArray.isEmpty()) {
+                return null;
+            } else {
+                return null;
+            }
         }
     }
 }

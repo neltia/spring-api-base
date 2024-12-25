@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
     @Mock
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @InjectMocks
     private UserService userService;
@@ -49,7 +49,6 @@ class UserServiceTest {
                 .loginTime(LocalDateTime.now())
                 .pwdChangeTime(LocalDateTime.now())
                 .build();
-        userRepository.save(testUser);
     }
 
     @Test
@@ -66,10 +65,12 @@ class UserServiceTest {
         ResponseResult result = userService.getUserList();
 
         // then
+        // - 응답 확인
         assertThat(result.getResultCode()).isEqualTo(ResponseCodeEnum.OK.getCode());
-        // 데이터가 JsonArray 형식으로 반환된다고 가정
+        // - null 값이 아닌지 먼저 확인
         assertThat(result.getData()).isNotNull();
-        JsonArray dataArray = result.getData().getAsJsonArray();
+        // - JsonArray 자료형으로 캐스팅 후 검증
+        JsonArray dataArray = result.getData().getAsJsonObject().get("list").getAsJsonArray();
         assertThat(dataArray).isNotNull();
         assertThat(dataArray.size()).isEqualTo(1);
     }
