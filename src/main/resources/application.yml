@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8443
 
 spring:
   # api gson mapper setting
@@ -24,3 +24,7 @@ spring:
         highlight_sql: true
         jdbc:
           batch_size: 500
+
+logging:
+  level:
+    co.elastic.clients: DEBUG

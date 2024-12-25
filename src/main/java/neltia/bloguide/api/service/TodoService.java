@@ -1,5 +1,6 @@
 package neltia.bloguide.api.service;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.google.gson.*;
 import lombok.RequiredArgsConstructor;
 import neltia.bloguide.api.dto.TodoGetItemListRequest;
@@ -10,25 +11,18 @@ import neltia.bloguide.api.infrastructure.utils.CommonUtils;
 import neltia.bloguide.api.infrastructure.utils.ElasticsearchUtils;
 import neltia.bloguide.api.share.ResponseCodeEnum;
 import neltia.bloguide.api.share.ResponseResult;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class TodoService {
-    @Qualifier("localElasticClient")
-    private final RestHighLevelClient client;
+    private final ElasticsearchClient localElasticClient;
 
     private final String todoIndex = "todo_index";
 
@@ -39,7 +33,7 @@ public class TodoService {
         ResponseResult result = new ResponseResult(0);
         JsonObject data = new JsonObject();
 
-        boolean isExists = esUtils.isIndexExists(client, indexName);
+        boolean isExists = esUtils.isIndexExists(localElasticClient, indexName);
         data.addProperty("isExists", isExists);
 
         result.setResultCode(ResponseCodeEnum.OK.getCode());
@@ -51,7 +45,7 @@ public class TodoService {
         ResponseResult result = new ResponseResult(0);
         JsonObject data = new JsonObject();
 
-        ArrayList<String> indexList = esUtils.getIndicesList(client, "*");
+        ArrayList<String> indexList = esUtils.getIndicesList(localElasticClient, "*");
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         data.add("indexList", gson.toJsonTree(indexList));
 
@@ -63,7 +57,7 @@ public class TodoService {
         ResponseResult result = new ResponseResult(0);
         JsonObject data = new JsonObject();
 
-        ArrayList<String> indexList = esUtils.getIndicesList(client, indexPattern);
+        ArrayList<String> indexList = esUtils.getIndicesList(localElasticClient, indexPattern);
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         data.add("indexList", gson.toJsonTree(indexList));
 
@@ -86,7 +80,7 @@ public class TodoService {
         source.addProperty("done", false);
         source.addProperty("created_at", createDateTime.toString());
 
-        JsonObject data = esUtils.insertTodoItem(client, todoIndex, source);
+        JsonObject data = esUtils.insertTodoItem(localElasticClient, todoIndex, source);
         if (data == null) {
             result.setResultCode(ResponseCodeEnum.INTERNAL_SERVER_ERROR.getCode());
             return result;
@@ -101,7 +95,7 @@ public class TodoService {
     public ResponseResult getTodoItem(String todoItemId) {
         ResponseResult result = new ResponseResult(0);
 
-        JsonObject data = esUtils.getTodoItem(client, todoIndex, todoItemId);
+        JsonObject data = esUtils.getTodoItem(localElasticClient, todoIndex, todoItemId);
         if (data == null) {
             result.setResultCode(ResponseCodeEnum.NOT_FOUND.getCode());
             return result;
@@ -116,11 +110,7 @@ public class TodoService {
     public ResponseResult getTodoList() {
         ResponseResult result = new ResponseResult(0);
 
-        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-        sourceBuilder.sort("created_at", SortOrder.DESC);
-        sourceBuilder.trackTotalHits(true); // document 수가 10000개 이상인 경우 필수
-
-        JsonObject data = esUtils.searchTodoList(client, todoIndex, sourceBuilder);
+        JsonObject data = esUtils.searchTodoList(localElasticClient, todoIndex, null);
         if (data == null) {
             result.setResultCode(ResponseCodeEnum.INTERNAL_SERVER_ERROR.getCode());
             return result;
@@ -134,27 +124,18 @@ public class TodoService {
     public ResponseResult searchTodoList(TodoSearchListRequest todoSearchListRequest) {
         ResponseResult result = new ResponseResult(0);
 
-        String keyword = todoSearchListRequest.getKeyword();
-        Integer priority = todoSearchListRequest.getPriority();
-        Boolean done = todoSearchListRequest.getDone();
-
-        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-        if (keyword != null) {
-            boolQuery.must(QueryBuilders.matchQuery("task", keyword));
+        Map<String, Object> filters = new HashMap<>();
+        if (todoSearchListRequest.getKeyword() != null) {
+            filters.put("task", todoSearchListRequest.getKeyword());
         }
-        if (priority != null) {
-            boolQuery.filter(QueryBuilders.matchQuery("priority", CommonUtils.convertGbn2Priority(priority)));
+        if (todoSearchListRequest.getPriority() != null) {
+            filters.put("priority", CommonUtils.convertGbn2Priority(todoSearchListRequest.getPriority()));
         }
-        if (done != null) {
-            boolQuery.filter(QueryBuilders.termQuery("done", done));
+        if (todoSearchListRequest.getDone() != null) {
+            filters.put("done", todoSearchListRequest.getDone());
         }
-        sourceBuilder.query(boolQuery);
 
-        sourceBuilder.sort("created_at", SortOrder.DESC);
-        sourceBuilder.trackTotalHits(true); // document 수가 10000개 이상인 경우 필수
-
-        JsonObject data = esUtils.searchTodoList(client, todoIndex, sourceBuilder);
+        JsonObject data = esUtils.searchTodoList(localElasticClient, todoIndex, filters);
         if (data == null) {
             result.setResultCode(ResponseCodeEnum.NOT_FOUND.getCode());
             return result;
@@ -168,7 +149,7 @@ public class TodoService {
     public ResponseResult updateTodoItem(String todoId, TodoUpdateRequestDto todoUpdateRequestDto) {
         ResponseResult result = new ResponseResult(0);
 
-        JsonObject todoItem = esUtils.getTodoItem(client, todoIndex, todoId);
+        JsonObject todoItem = esUtils.getTodoItem(localElasticClient, todoIndex, todoId);
         if (todoItem == null) {
             result.setResultCode(ResponseCodeEnum.NOT_FOUND.getCode());
             return result;
@@ -185,7 +166,7 @@ public class TodoService {
         source.addProperty("done", done);
         source.addProperty("updated_at", updateDateTime.toString());
 
-        JsonObject data = esUtils.updateTodoItem(client, todoIndex, todoId, source);
+        JsonObject data = esUtils.updateTodoItem(localElasticClient, todoIndex, todoId, source);
         if (data == null) {
             result.setResultCode(ResponseCodeEnum.INTERNAL_SERVER_ERROR.getCode());
             return result;
@@ -199,7 +180,7 @@ public class TodoService {
     public ResponseResult deleteTodoItem(String todoItemId) {
         ResponseResult result = new ResponseResult(0);
 
-        JsonObject data = esUtils.deleteTodoItem(client, todoIndex, todoItemId);
+        JsonObject data = esUtils.deleteTodoItem(localElasticClient, todoIndex, todoItemId);
         if (data == null) {
             result.setResultCode(ResponseCodeEnum.NOT_FOUND.getCode());
             return result;
@@ -216,7 +197,7 @@ public class TodoService {
 
         List<String> todoIdList = todoGetItemListRequest.getIdList();
         String retKeyId = null;
-        JsonObject data = esUtils.getTodoListWithMultiGet(client, todoIndex, todoIdList, retKeyId);
+        JsonObject data = esUtils.getTodoListWithMultiGet(localElasticClient, todoIndex, todoIdList, retKeyId);
         if (data == null) {
             result.setResultCode(ResponseCodeEnum.NOT_FOUND.getCode());
             return result;
@@ -232,32 +213,19 @@ public class TodoService {
         ResponseResult result = new ResponseResult(0);
 
         // - filter query
-        String keyword = todoSearchListRequest.getKeyword();
-        Integer priority = todoSearchListRequest.getPriority();
-        Boolean done = todoSearchListRequest.getDone();
-        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-        if (keyword != null) {
-            boolQuery.filter(QueryBuilders.matchQuery("task", keyword));
+        Map<String, Object> filters = new HashMap<>();
+        if (todoSearchListRequest.getKeyword() != null) {
+            filters.put("task", todoSearchListRequest.getKeyword());
         }
-        if (priority != null) {
-            boolQuery.filter(QueryBuilders.termQuery("priority", CommonUtils.convertGbn2Priority(priority)));
+        if (todoSearchListRequest.getPriority() != null) {
+            filters.put("priority", CommonUtils.convertGbn2Priority(todoSearchListRequest.getPriority()));
         }
-        if (done != null) {
-            boolQuery.filter(QueryBuilders.termQuery("done", done));
+        if (todoSearchListRequest.getDone() != null) {
+            filters.put("done", todoSearchListRequest.getDone());
         }
-        sourceBuilder.query(boolQuery);
-
-        // - build aggs query
-        sourceBuilder.size(0);
-        sourceBuilder.sort("created_at", SortOrder.DESC);
-        sourceBuilder.trackTotalHits(true); // document 수가 10000개 이상인 경우 필수
-        sourceBuilder.aggregation(AggregationBuilders.terms("aggs_done_count").field("done")).query(boolQuery);
-        sourceBuilder.aggregation(AggregationBuilders.terms("aggs_priority_count").field("priority")).query(boolQuery);
-        sourceBuilder.aggregation(AggregationBuilders.terms("aggs_task_word").field("task.keyword")).query(boolQuery);
 
         // - get stat data
-        JsonObject data = esUtils.aggsTodoList(client, todoIndex, sourceBuilder);
+        JsonObject data = esUtils.aggTodoList(localElasticClient, todoIndex, filters);
         if (data == null) {
             result.setResultCode(ResponseCodeEnum.NOT_FOUND.getCode());
             return result;
