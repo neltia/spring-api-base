@@ -1,5 +1,6 @@
 package neltia.bloguide.api.controller;
 
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import neltia.bloguide.api.dto.TodoGetItemListRequest;
 import neltia.bloguide.api.dto.TodoSaveRequestDto;
@@ -43,7 +44,7 @@ public class TodoController {
 
     // get item by doc id
     @GetMapping("/{todoId}")
-    public ResponseEntity<?> getTodoItem(@PathVariable String todoId) {
+    public ResponseEntity<?> getTodoItem(@PathVariable("todoId") String todoId) {
         ResponseResult result;
         result = todoService.getTodoItem(todoId);
         return ResponseEntity.ok().body(result.getResponseResult());
@@ -58,7 +59,7 @@ public class TodoController {
 
     // update item by doc id
     @PutMapping("/{todoId}")
-    public ResponseEntity<?> updateTodoItem(@PathVariable String todoId, @Valid @RequestBody TodoUpdateRequestDto todoUpdateRequestDto) {
+    public ResponseEntity<?> updateTodoItem(@PathVariable("todoId") String todoId, @Valid @RequestBody TodoUpdateRequestDto todoUpdateRequestDto) {
         ResponseResult result;
         result = todoService.updateTodoItem(todoId, todoUpdateRequestDto);
         return ResponseEntity.ok().body(result.getResponseResult());
@@ -66,7 +67,7 @@ public class TodoController {
 
     // delete item by doc id
     @DeleteMapping("/{todoId}")
-    public ResponseEntity<?> deleteTodoItem(@PathVariable String todoId) {
+    public ResponseEntity<?> deleteTodoItem(@PathVariable("todoId") String todoId) {
         ResponseResult result;
         result = todoService.deleteTodoItem(todoId);
         return ResponseEntity.ok().body(result.getResponseResult());

@@ -9,6 +9,7 @@ public enum ResponseCodeEnum {
     DATA_EXISTS(200),
     FILE_EXISTS(200),
     OK(200),
+    DELETE_OK(200),
 
     NEW_FILE_UPLOAD_SUCCESS(201),
     FILE_NEW(201),

@@ -19,7 +19,7 @@ public class TodoAdminController {
     // exists index (table)
     @GetMapping("/exists/{indexName}")
     // @ApiOperation(value = "특정 ES 존재 여부 확인", notes = "인덱스 이름으로 인덱스 존재 여부를 조회합니다.")
-    public ResponseEntity<?> isEsIndexExists(@PathVariable String indexName) {
+    public ResponseEntity<?> isEsIndexExists(@PathVariable("indexName") String indexName) {
         ResponseResult result;
         result = todoService.isEsIndexExists(indexName);
         return ResponseEntity.ok().body(result.getResponseResult());
@@ -35,7 +35,7 @@ public class TodoAdminController {
 
     // index list by index pattern
     @GetMapping("/index-list/{indexPattern}")
-    public ResponseEntity<?> getIndexListByPattern(@PathVariable String indexPattern,
+    public ResponseEntity<?> getIndexListByPattern(@PathVariable("indexPattern") String indexPattern,
                                                    @RequestParam(required = false) String sortField, @RequestParam(required = false) boolean sortOrderDesc) {
         ResponseResult result;
         result = todoService.getIndicesList(indexPattern);

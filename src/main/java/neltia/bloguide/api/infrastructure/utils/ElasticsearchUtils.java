@@ -79,10 +79,11 @@ public class ElasticsearchUtils {
 
     // Insert a document into an index
     public JsonObject insertTodoItem(ElasticsearchClient client, String index, JsonObject source) {
+        Map<String, Object> sourceMap = new Gson().fromJson(source, Map.class);
         try {
             IndexResponse response = client.index(i -> i
                     .index(index)
-                    .document(source)
+                    .document(sourceMap)
             );
 
             JsonObject result = new JsonObject();
@@ -126,7 +127,7 @@ public class ElasticsearchUtils {
                 s.index(index);
                 if (queryFilters != null) {
                     for (Map.Entry<String, Object> filter : queryFilters.entrySet()) {
-                        s.query(q -> q.term(t -> t.field(filter.getKey()).value(filter.getValue().toString())));
+                        s.query(q -> q.match(t -> t.field(filter.getKey()).query(filter.getValue().toString())));
                     }
                 }
                 return s.sort(so -> so.field(f -> f.field("created_at").order(SortOrder.Desc)));
@@ -172,9 +173,9 @@ public class ElasticsearchUtils {
         return result;
     }
 
-    // delete by doc id
-// Delete a document by ID
+    // Delete a document by ID
     public JsonObject deleteTodoItem(ElasticsearchClient client, String index, String todoItemId) {
+        JsonObject result = new JsonObject();
         DeleteResponse response;
         try {
             response = client.delete(d -> d
@@ -183,34 +184,42 @@ public class ElasticsearchUtils {
             );
         } catch (Exception e) {
             System.out.println("Error deleting document: " + e.getMessage());
-            return null;
+            result.addProperty("status", ResponseCodeEnum.INTERNAL_SERVER_ERROR.toString());
+            result.addProperty("error_msg", e.getMessage());
+            return result;
         }
-        JsonObject result = new JsonObject();
-        result.addProperty("data", ResponseCodeEnum.DATA_EXISTS.toString());
+
+        if (Objects.equals(response.result().toString(), "NotFound")) {
+            result.addProperty("status", ResponseCodeEnum.NOT_FOUND.toString());
+        } else {
+            result.addProperty("status", ResponseCodeEnum.DELETE_OK.toString());
+        }
+
         return result;
     }
 
     // get es doc with multi get
     public JsonObject getTodoListWithMultiGet(ElasticsearchClient client, String index, List<String> todoIds, String key) {
         JsonObject result = new JsonObject();
-        MgetResponse<JsonObject> response;
+        MgetResponse<Todo> response;
 
         try {
             response = client.mget(m -> m
                             .index(index)
                             .ids(todoIds),
-                    JsonObject.class
+                    Todo.class
             );
         } catch (Exception e) {
             System.out.println("Error retrieving multiple documents: " + e.getMessage());
             return null;
         }
 
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
         for (var doc : response.docs()) {
             if (doc.isFailure()) {
                 continue;
             }
-            JsonObject source = doc.result().source();
+            JsonObject source = gson.toJsonTree(doc.result().source()).getAsJsonObject();
             if (source == null) {continue;}
 
             if (key == null || key.isEmpty()) {
@@ -263,7 +272,7 @@ public class ElasticsearchUtils {
             JsonArray results = new JsonArray();
             for (StringTermsBucket bucket : aggregation.sterms().buckets().array()) {
                 JsonObject bucketJson = new JsonObject();
-                bucketJson.addProperty("key", String.valueOf(bucket.key()));
+                bucketJson.addProperty("key", bucket.key().stringValue());
                 bucketJson.addProperty("count", bucket.docCount());
                 results.add(bucketJson);
             }

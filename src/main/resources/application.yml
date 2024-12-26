@@ -24,6 +24,28 @@ spring:
         highlight_sql: true
         jdbc:
           batch_size: 500
+  # es
+  data:
+    elasticsearch:
+      repositories:
+        enabled: true
+# spring doc (swagger)
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    # path -> query > body -> response
+    groups-order: desc
+    tags-sorter: alpha
+    operations-sorter: method
+    disable-swagger-default-url: true
+    display-request-duration: true
+  api-docs:
+    path: /api-docs
+  show-actuator: true
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+  paths-to-match:
+    - /api/**
 
 logging:
   level:

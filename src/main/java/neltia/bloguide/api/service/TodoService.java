@@ -14,10 +14,7 @@ import neltia.bloguide.api.share.ResponseResult;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -181,8 +178,11 @@ public class TodoService {
         ResponseResult result = new ResponseResult(0);
 
         JsonObject data = esUtils.deleteTodoItem(localElasticClient, todoIndex, todoItemId);
-        if (data == null) {
+        String deleteStatus = data.get("status").getAsString();
+
+        if (Objects.equals(deleteStatus, ResponseCodeEnum.NOT_FOUND.toString())) {
             result.setResultCode(ResponseCodeEnum.NOT_FOUND.getCode());
+            result.setData(data);
             return result;
         }
 
